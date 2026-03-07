@@ -4,7 +4,14 @@ __pycache__/
 *$py.class
 .env
 .flaskenv
-*.pkl
+/tmp/
+.agents/
+.agent/
+_agents/
+_agent/
 patient_data.csv
 *.png
-model_metadata.json
+# Ensure model and metadata are included
+!best_hypertension_model.pkl
+!label_encoder.pkl
+!model_metadata.json

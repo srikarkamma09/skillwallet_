@@ -57,7 +57,101 @@ for i, cell in enumerate(nb['cells']):
     if cell['cell_type'] == 'markdown':
         if "### 3.2 Visual Analysis" in ''.join(cell['source']):
             nb['cells'][i]['source'] = [line + '\n' for line in visual_analysis_text.split('\n')]
+            start_idx = i
             break
+
+# remove cells between visual analysis and feature engineering headings
+end_idx = None
+for j, cell in enumerate(nb['cells']):
+    if cell['cell_type'] == 'markdown' and "## 4. Feature Engineering" in ''.join(cell['source']):
+        end_idx = j
+        break
+if end_idx is not None and start_idx is not None:
+    # delete cells in range (start_idx+1, end_idx)
+    for k in range(end_idx-1, start_idx, -1):
+        nb['cells'].pop(k)
+
+# insert new code cell with required plots after visual analysis cell
+plot_code = '''# Viz: only the requested plots
+
+# mapping tables for conversions
+age_map = {'18-34': 26, '35-50': 42.5, '51-64': 57.5, '65+': 70}
+systolic_map = {'90 - 100': 95, '101 - 110': 105, '111 - 120': 115, '121 - 130': 125, '131 - 140': 135, '141 - 150': 145, '151 - 160': 155, '161 - 170': 165, '171 - 180': 175, '181 - 190': 185, '191 - 200': 195}
+diastolic_map = {'51 - 60': 55.5, '61 - 70': 65.5, '70 - 80': 75, '81 - 90': 85, '91 - 100': 95, '101 - 110': 105, '111 - 120': 115, '121 - 130': 125, '131 - 140': 135, '141 - 150': 145}
+
+df_plot = df.copy()
+df_plot['Age_num'] = df_plot['Age'].map(age_map)
+df_plot['Systolic_num'] = df_plot['Systolic'].map(systolic_map)
+df_plot['Diastolic_num'] = df_plot['Diastolic'].map(diastolic_map)
+
+# 1. Gender Distribution
+fig, axs = plt.subplots(1, 2, figsize=(12,5))
+sns.countplot(data=df, x='Gender', ax=axs[0], palette='pastel')
+axs[0].set_title('Gender Count')
+df['Gender'].value_counts().plot.pie(autopct='%1.1f%%', ax=axs[1],
+                                      colors=sns.color_palette('pastel'),
+                                      startangle=90, label='')
+axs[1].set_title('Gender Proportion')
+axs[1].set_ylabel('')
+plt.tight_layout()
+plt.savefig('gender_distribution.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# 2. Hypertension Stages Distribution
+fig, ax = plt.subplots(figsize=(8,5))
+sns.countplot(data=df, x='Stages', ax=ax, palette='viridis', edgecolor='black')
+ax.set_title('Distribution of Hypertension Stages', fontsize=14, fontweight='bold')
+for p in ax.patches:
+    ax.annotate(f'{int(p.get_height())}',
+                (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha='center', va='bottom', fontweight='bold', xytext=(0, 5),
+                textcoords='offset points')
+plt.tight_layout()
+plt.savefig('stage_distribution.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# 3. Correlation between Systolic and Diastolic
+corr = df_plot[['Systolic_num','Diastolic_num']].corr()
+plt.figure(figsize=(6,4))
+sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0)
+plt.title('Systolic vs Diastolic Correlation')
+plt.tight_layout()
+plt.savefig('systolic_diastolic_corr.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# 4. TakeMedication vs. Severity
+fig, ax = plt.subplots(figsize=(8,5))
+sns.countplot(data=df, x='TakeMedication', hue='Stages', ax=ax, palette='viridis')
+ax.set_title('Medication Status vs Hypertension Stages')
+plt.tight_layout()
+plt.savefig('medication_severity.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# 5. Age Group vs Hypertension Stages
+fig, ax = plt.subplots(figsize=(10,5))
+sns.countplot(data=df, x='Age', hue='Stages', ax=ax, palette='Set2')
+ax.set_title('Age Group vs Hypertension Stages')
+plt.tight_layout()
+plt.savefig('age_stage_count.png', dpi=150, bbox_inches='tight')
+plt.show()
+
+# 6. Pairplot: Systolic vs Diastolic across stages
+sns.pairplot(df_plot[['Systolic_num','Diastolic_num','Stages']], hue='Stages',
+             palette='viridis', diag_kind='kde',
+             plot_kws={'alpha':0.6, 'edgecolor':'black', 'linewidth':0.3})
+plt.suptitle('Pairplot of Systolic and Diastolic by Stage', fontsize=16, fontweight='bold', y=1.02)
+plt.savefig('pairplot.png', dpi=150, bbox_inches='tight')
+plt.show()
+'''
+
+new_cell = {
+    'cell_type': 'code',
+    'execution_count': None,
+    'metadata': {},
+    'outputs': [],
+    'source': [line + '\n' for line in plot_code.split('\n')]
+}
+nb['cells'].insert(start_idx + 1, new_cell)
 
 
 # 3. Update Cell 30 or similar: Model Testing
