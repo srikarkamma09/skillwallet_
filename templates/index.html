@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Health Assessment | Hypertension Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-card">
+                <h3><i class="fas fa-info-circle"></i> About This System</h3>
+                <p>Our AI-powered platform analyzes multiple cardiovascular risk factors using advanced machine learning algorithms trained on clinical data.</p>
+                <ul style="margin-top:12px; font-size:0.85rem; color:var(--text-sub); list-style:none;">
+                    <li style="margin-bottom:6px;"><i class="fas fa-check" style="color:var(--success); margin-right:8px;"></i> Evidence-based risk assessment</li>
+                    <li style="margin-bottom:6px;"><i class="fas fa-check" style="color:var(--success); margin-right:8px;"></i> Clinical guideline compliance</li>
+                    <li style="margin-bottom:6px;"><i class="fas fa-check" style="color:var(--success); margin-right:8px;"></i> Personalized recommendations</li>
+                </ul>
+            </div>
+
+            <div class="sidebar-card">
+                <h3><i class="fas fa-heart"></i> Blood Pressure Guidelines</h3>
+                <table class="guidelines-table">
+                    <tr><td>Normal</td><td><120/80 mmHg</td></tr>
+                    <tr><td>Elevated</td><td>120-129/<80 mmHg</td></tr>
+                    <tr><td>Stage 1</td><td>130-139/80-89 mmHg</td></tr>
+                    <tr><td>Stage 2</td><td>≥140/≥90 mmHg</td></tr>
+                    <tr><td>Crisis</td><td>>180/>120 mmHg</td></tr>
+                </table>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="header-card">
+                <h1><i class="fas fa-stethoscope"></i> Comprehensive Health Assessment</h1>
+                <p>Complete our evidence-based questionnaire for personalized hypertension risk evaluation and clinical recommendations.</p>
+            </div>
+
+            <!-- Prediction Result Section (Hidden initially) -->
+            <div id="resultArea" style="display:none;">
+                <div id="resultCard" class="card result-card">
+                    <div class="result-icon">
+                        <i id="statusIcon" class="fas fa-check"></i>
+                    </div>
+                    <div class="result-header">
+                        <div id="riskBadge" class="badge">Low Risk</div>
+                        <h2 id="predictedStage">Normal Blood Pressure</h2>
+                        <p id="confidenceText" style="color:var(--text-sub); font-size:0.9rem; margin-bottom:16px;">
+                            Confidence: <span id="confidenceValue">87.5%</span>
+                        </p>
+                        <p style="font-size:0.95rem; margin-bottom:20px;">Your cardiovascular risk assessment indicates <span id="riskVerdict">normal</span> blood pressure levels.</p>
+                        
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <h3 style="font-size:1rem; margin-bottom:12px;"><i class="fas fa-clipboard-list"></i> Clinical Recommendations</h3>
+                            <div id="recommendationsList" class="recommendations">
+                                <!-- Dynamic Recs -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Section -->
+            <div class="card">
+                <form id="healthForm">
+                    <div class="form-grid" id="formContainer">
+                        <!-- Dynamic Fields -->
+                    </div>
+                    <button type="submit" class="btn">
+                        <i class="fas fa-chart-line"></i> GENERATE RISK ASSESSMENT
+                    </button>
+                </form>
+            </div>
+
+            <p class="disclaimer">
+                <i class="fas fa-exclamation-triangle"></i> <strong>Medical Disclaimer:</strong> This tool is for educational and decision-support purposes only. It does not provide professional medical diagnosis or treatment. Always consult a physician for health concerns.
+            </p>
+        </main>
+    </div>
+
+    <script>
+        const metadata = {{ metadata | tojson }};
+        const numericalFeatures = metadata.numerical_features || [];
+        
+        // Configuration for dropdowns mapping to model features
+        const inputConfigs = {
+            "Gender": {
+                label: "Gender",
+                icon: "fa-venus-mars",
+                options: ["Male", "Female"]
+            },
+            "Age": {
+                label: "Age Group",
+                icon: "fa-calendar-alt",
+                options: ["18-34", "35-50", "51-64", "65+"]
+            },
+            "History": {
+                label: "Family History of Hypertension",
+                icon: "fa-history",
+                options: ["Yes", "No"]
+            },
+            "Patient": {
+                label: "Currently Under Medical Care",
+                icon: "fa-user-md",
+                options: ["Yes", "No"]
+            },
+            "TakeMedication": {
+                label: "Currently Taking BP Medication",
+                icon: "fa-pills",
+                options: ["Yes", "No", "Don't Know"]
+            },
+            "Severity": {
+                label: "Symptom Severity",
+                icon: "fa-thermometer-half",
+                options: ["Mild", "Moderate", "Severe"]
+            },
+            "BreathShortness": {
+                label: "Shortness of Breath",
+                icon: "fa-lungs-virus",
+                options: ["Yes", "No"]
+            },
+            "VisualChanges": {
+                label: "Vision Changes",
+                icon: "fa-eye",
+                options: ["Yes", "No"]
+            },
+            "NoseBleeding": {
+                label: "Frequent Nosebleeds",
+                icon: "fa-tint",
+                options: ["Yes", "No", "Occasionally"]
+            },
+            "Whendiagnoused": {
+                label: "Time Since Diagnosis",
+                icon: "fa-clock",
+                options: ["<1 Year", "1-5 Years", "5+ Years"]
+            },
+            "Systolic": {
+                label: "Systolic Pressure",
+                icon: "fa-heartbeat",
+                options: ["90 - 110", "111 - 120", "121 - 139", "140 - 159", "160+"]
+            },
+            "Diastolic": {
+                label: "Diastolic Pressure",
+                icon: "fa-heartbeat",
+                options: ["60 - 80", "81 - 90", "91 - 100", "101 - 110", "110+"]
+            },
+            "ControlledDiet": {
+                label: "Heart-Healthy Diet",
+                icon: "fa-utensils",
+                options: ["Yes", "No"]
+            }
+        };
+
+        const formContainer = document.getElementById('formContainer');
+
+        // Render form fields based on metadata and manual configs
+        // We include Gender even if not in metadata list for UI completeness, 
+        // will filter when sending to model.
+        const allFields = ["Gender", ...metadata.features];
+        
+        allFields.forEach(fieldKey => {
+            const config = inputConfigs[fieldKey] || { label: fieldKey, icon: "fa-question-circle", options: ["Yes", "No"] };
+            
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            
+            const label = document.createElement('label');
+            label.innerHTML = `<i class="fas ${config.icon}"></i> ${config.label}`;
+            
+            const select = document.createElement('select');
+            select.name = fieldKey;
+            select.required = true;
+            
+            const placeholder = document.createElement('option');
+            placeholder.value = "";
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            placeholder.textContent = `Select ${config.label.split(' ').pop()}`;
+            select.appendChild(placeholder);
+            
+            config.options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                select.appendChild(option);
+            });
+            
+            group.appendChild(label);
+            group.appendChild(select);
+            formContainer.appendChild(group);
+        });
+
+        document.getElementById('healthForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {};
+            
+            // Only send features expected by the model
+            metadata.features.forEach(f => {
+                let val = formData.get(f);
+                data[f] = numericalFeatures.includes(f) ? parseFloat(val) : val;
+            });
+
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                showResult(result);
+            } catch (err) {
+                console.error("Prediction failed:", err);
+            }
+        });
+
+        function showResult(result) {
+            const resultArea = document.getElementById('resultArea');
+            const resCard = document.getElementById('resultCard');
+            const predictedStage = document.getElementById('predictedStage');
+            const riskBadge = document.getElementById('riskBadge');
+            const confidenceValue = document.getElementById('confidenceValue');
+            const riskVerdict = document.getElementById('riskVerdict');
+            const recommendationsList = document.getElementById('recommendationsList');
+            const statusIcon = document.getElementById('statusIcon');
+
+            resultArea.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            predictedStage.textContent = result.predicted_stage;
+            confidenceValue.textContent = result.risk_score + '%';
+            
+            const isHighRisk = ['HIGH', 'CRITICAL'].includes(result.urgency);
+            
+            resCard.className = isHighRisk ? 'card result-card high-risk' : 'card result-card';
+            riskBadge.className = isHighRisk ? 'badge badge-high' : 'badge badge-low';
+            riskBadge.textContent = result.urgency + ' RISK';
+            statusIcon.className = isHighRisk ? 'fas fa-exclamation-triangle' : 'fas fa-check';
+            riskVerdict.textContent = result.predicted_stage.toLowerCase();
+
+            recommendationsList.innerHTML = '';
+            result.recommendations.forEach(rec => {
+                const div = document.createElement('div');
+                div.className = 'rec-item';
+                div.innerHTML = `<i class="fas fa-chevron-right"></i> ${rec}`;
+                recommendationsList.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
