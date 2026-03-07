@@ -11,6 +11,10 @@ _agents/
 _agent/
 patient_data.csv
 *.png
+
+# Utility scripts
+modify_notebook.py
+
 # Ensure model and metadata are included
 !best_hypertension_model.pkl
 !label_encoder.pkl
