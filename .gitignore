@@ -12,8 +12,11 @@ _agent/
 patient_data.csv
 *.png
 
-# Utility scripts
+# Utility and research files
 modify_notebook.py
+Hypertension_Prediction_System.ipynb
+markdown_cells.txt
+
 
 # Ensure model and metadata are included
 !best_hypertension_model.pkl
