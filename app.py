@@ -2,9 +2,9 @@ from flask import Flask, render_template, request, jsonify
 import joblib, pandas as pd, json
 
 app = Flask(__name__)
-model = joblib.load('best_hypertension_model.pkl')
-label_encoder = joblib.load('label_encoder.pkl')
-with open('model_metadata.json') as f:
+model = joblib.load('database/best_hypertension_model.pkl')
+label_encoder = joblib.load('database/label_encoder.pkl')
+with open('config/model_metadata.json') as f:
     metadata = json.load(f)
 
 @app.route('/')
